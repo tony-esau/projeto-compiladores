@@ -1,6 +1,8 @@
 import sys
 entrada = ""   # Linha que está sendo analisada.
 pos = 0        # Posição do próximo caractere a ser lido em entrada.
+lookahead = ("fim", "")   # Token sendo examinado no momento.
+saida = []                # Tokens da tradução pós-fixada.
 
 def proximo():
     """
@@ -34,7 +36,26 @@ def proximo():
         return (c, c)
 
     # Qualquer outro caractere é inválido.
-    raise SyntaxError(f"caractere inválido '{c}' na posição {pos}.")
+    raise SyntaxError(f"Caractere inválido '{c}' na posição {pos}.")
+
+def casar(tipo):
+    """
+        - Match: Confere se o token atual é do tipo esperado e avança para o 
+        próximo.
+    """
+
+    global lookahead
+    if lookahead[0] == tipo:
+        lookahead = proximo()
+    else:
+        raise SyntaxError(f"Esperado '{tipo}', encontrado '{lookahead[1] or 'fim'}'")
+
+def emitir(valor):
+    """
+        - Ação semântica: acrescenta um token à saída pós-fixada.
+    """
+
+    saida.append(valor)
 
 def main():
     global entrada, pos
@@ -60,7 +81,7 @@ def main():
         while token[0] != "fim":
             print(token)
             token = proximo()
-        print()  # Linha vazia para separar uma expressão da outra
+        print()  
 
     if fonte is not sys.stdin:
         fonte.close()
