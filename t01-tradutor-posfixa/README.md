@@ -25,7 +25,17 @@ Saída:    10 20 3 * +
 
 ## Gramática
 
-Gramática com precedência, após a eliminação da recursão à esquerda:
+Gramática original, com precedência e recursão à esquerda:
+
+```
+expr   → expr + term | expr - term | term
+term   → term * fact | term / fact | fact
+fact   → ( expr ) | num
+num    → num digit | digit
+digit  → 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+```
+
+Gramática completa após a eliminação da recursão à esquerda, usada pelo analisador:
 
 ```
 expr   → term expr'
@@ -33,9 +43,12 @@ expr'  → + term expr' | - term expr' | ε
 term   → fact term'
 term'  → * fact term' | / fact term' | ε
 fact   → ( expr ) | num
+num    → digit num'
+num'   → digit num' | ε
+digit  → 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 ```
 
-O símbolo `num` é tratado como um único token, produzido pelo procedimento `proximo`, que agrupa dígitos consecutivos. Cada não-terminal corresponde a um procedimento no código.
+Os não-terminais `expr`, `expr'`, `term`, `term'` e `fact` correspondem, cada um, a um procedimento no código. As produções de `num`, `num'` e `digit` são reconhecidas pelo procedimento `proximo`, que agrupa dígitos consecutivos e entrega ao analisador um único token `num`.
 
 ## Requisitos
 
@@ -64,12 +77,12 @@ Os casos ficam na pasta `testes/`, sempre em pares: um arquivo com as entradas (
 
 | Arquivo | Conteúdo |
 |---|---|
-| `testes/publicos_entrada.txt` | os 7 casos públicos do enunciado |
-| `testes/publicos_saida.txt` | saídas esperadas dos casos públicos |
-| `testes/proprios_entrada.txt` | casos próprios (associatividade, parênteses aninhados, vários dígitos, espaços, tabulação e linha em branco) |
-| `testes/proprios_saida.txt` | saídas esperadas dos casos próprios |
+| `testes/entrada_publica.txt` | os 7 casos públicos do enunciado |
+| `testes/esperado_publica.txt` | saídas esperadas dos casos públicos |
+| `testes/entrada_propria.txt` | casos próprios (associatividade, parênteses aninhados, vários dígitos, espaços, tabulação e linha em branco) |
+| `testes/esperado_propria.txt` | saídas esperadas dos casos próprios |
 
-A linha em branco em `proprios_entrada.txt` é proposital: ela deve ser ignorada e não gera linha na saída, por isso o arquivo de saídas tem uma linha a menos.
+A linha em branco em `entrada_propria.txt` é proposital: ela deve ser ignorada e não gera linha na saída, por isso o arquivo de saídas tem uma linha a menos.
 
 O script `test.py` executa o tradutor sobre cada arquivo de entrada e compara, linha a linha, com o arquivo de saídas correspondente, mostrando os casos que falharam:
 
@@ -80,12 +93,12 @@ python3 test.py
 Para conferir um arquivo isolado sem o script:
 
 ```bash
-python3 tradutor.py testes/publicos_entrada.txt | diff - testes/publicos_saida.txt
+python3 tradutor.py testes/entrada_publica.txt | diff - testes/esperado_publica.txt
 ```
 
 Se o `diff` não imprimir nada, todas as saídas estão corretas.
 
-O arquivo `testes.txt` exigido na entrega é montado a partir de `testes/proprios_entrada.txt`.
+O arquivo `testes.txt` exigido na entrega é montado a partir de `testes/entrada_propria.txt`.
 
 ## Estrutura da pasta
 
@@ -93,7 +106,7 @@ O arquivo `testes.txt` exigido na entrega é montado a partir de `testes/proprio
 t01-tradutor-posfixa/
 ├── tradutor.py      # implementação do tradutor
 ├── test.py          # executa os casos de teste e compara as saídas
-├── relatorio.pdf    # fonte do relatório (Parte A, decisões e limitações)
+├── relatorio.pdf    # relatório (Parte A, decisões de implementação e limitações)
 ├── testes/          # pares de arquivos de entrada e saída esperada
 └── README.md
 ```
