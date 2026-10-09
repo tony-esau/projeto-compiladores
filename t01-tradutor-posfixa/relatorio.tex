@@ -1,0 +1,376 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[provide=*,brazilian]{babel}
+\usepackage{mathpazo}
+\usepackage{courier}
+\usepackage{textcomp}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{\usepackage{microtype}}{}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{forest}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{acao}{RGB}{170,40,40}
+\definecolor{cinza}{RGB}{100,100,100}
+
+% Notação da gramática
+\newcommand{\nt}[1]{\textit{#1}}                 % não-terminal
+\newcommand{\tm}[1]{\texttt{\textbf{#1}}}        % terminal
+\newcommand{\pr}{\ensuremath{\rightarrow}}
+\newcommand{\ou}{\ensuremath{\;\mid\;}}
+\newcommand{\vazio}{\ensuremath{\epsilon}}
+\newcommand{\linha}{\ensuremath{'}}
+\newcommand{\act}[1]{{\color{acao}\texttt{\{print(\textquotesingle#1\textquotesingle)\}}}}
+% Ação numerada na árvore (ordem de execução na busca em profundidade)
+\newcommand{\acao}[2]{{\color{acao}\texttt{\{print(\textquotesingle#1\textquotesingle)\}}\,\textbf{(#2)}}}
+
+\lstset{
+	language=Python,
+	basicstyle=\ttfamily\small,
+	keywordstyle=\bfseries,
+	commentstyle=\color{cinza}\itshape,
+	stringstyle=\color{acao},
+	columns=fullflexible,
+	frame=single,
+	framerule=0.3pt,
+	xleftmargin=4pt, xrightmargin=4pt,
+	showstringspaces=false,
+	literate={á}{{\'a}}1 {à}{{\`a}}1 {ã}{{\~a}}1 {â}{{\^a}}1 {é}{{\'e}}1
+	{ê}{{\^e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {õ}{{\~o}}1 {ô}{{\^o}}1
+	{ú}{{\'u}}1 {ç}{{\c c}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1
+	{Ó}{{\'O}}1 {Ú}{{\'U}}1 {Ç}{{\c C}}1 {→}{{$\rightarrow$}}1
+}
+
+\forestset{
+	arvore/.style={
+		for tree={
+			font=\small,
+			inner sep=1.5pt,
+			l sep=6pt, s sep=5pt,
+			edge={cinza},
+			parent anchor=south, child anchor=north,
+		}
+	},
+	acaon/.style={edge={dashed,acao}},
+}
+
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{2em}
+
+\begin{document}
+	
+	% ---------------------------------------------------------------- Cabeçalho
+	\begin{center}
+		{\large\textbf{Universidade Federal do Cariri (UFCA)}}\\[2pt]
+		Ciência da Computação\\
+		Compiladores (CC0032), semestre 2026.2\\
+		Prof. Laszlon Rodrigues da Costa\\[10pt]
+		{\Large\textbf{Trabalho 01}}\\[2pt]
+		{\large Tradutor Dirigido por Sintaxe: de Infixa para Pós-fixa}\\[10pt]
+		\textbf{Autor:} Tony Esaú de Oliveira 
+	\end{center}
+	
+	\vspace{4pt}
+	\hrule
+	\vspace{6pt}
+	
+	% ================================================================ Parte A
+	\section{Parte A: projeto da tradução}
+	
+	\subsection{Item 1: eliminação da recursão à esquerda}
+	
+	A gramática de partida é recursiva à esquerda em \nt{expr}, \nt{term} e \nt{num}:
+	
+	\begin{center}
+		\begin{tabular}{r@{\;\;}c@{\;\;}l}
+			\nt{expr}  & \pr & \nt{expr} \tm{+} \nt{term} \ou \nt{expr} \tm{-} \nt{term} \ou \nt{term} \\
+			\nt{term}  & \pr & \nt{term} \tm{*} \nt{fact} \ou \nt{term} \tm{/} \nt{fact} \ou \nt{fact} \\
+			\nt{fact}  & \pr & \tm{(} \nt{expr} \tm{)} \ou \nt{num} \\
+			\nt{num}   & \pr & \nt{num} \nt{digit} \ou \nt{digit} \\
+			\nt{digit} & \pr & \tm{0} \ou \tm{1} \ou \tm{2} \ou \tm{3} \ou \tm{4} \ou \tm{5} \ou \tm{6} \ou \tm{7} \ou \tm{8} \ou \tm{9}
+		\end{tabular}
+	\end{center}
+	
+	Aplicando a técnica $A \pr A\alpha \mid A\beta \mid \gamma \;\Rightarrow\; A \pr \gamma A', \; A' \pr \alpha A' \mid \beta A' \mid \epsilon$, com um novo não-terminal para cada não-terminal recursivo (nomeado com notação linha '):
+	
+	\begin{itemize}[nosep]
+		\item em \nt{expr}: $\alpha = \tm{+}\,\nt{term}$, $\beta = \tm{-}\,\nt{term}$, $\gamma = \nt{term}$;
+		\item em \nt{term}: $\alpha = \tm{*}\,\nt{fact}$, $\beta = \tm{/}\,\nt{fact}$, $\gamma = \nt{fact}$;
+		\item em \nt{num}: $\alpha = \nt{digit}$, $\gamma = \nt{digit}$
+	\end{itemize}
+	
+	O enunciado pede a transformação apenas de \nt{expr} e \nt{term}; a de \nt{num} foi feita também, para que a gramática inteira fique sem recursão à esquerda. A gramática resultante é:
+	
+	\begin{center}
+		\begin{tabular}{r@{\;\;}c@{\;\;}l}
+			\nt{expr}            & \pr & \nt{term} \nt{expr}\linha \\
+			\nt{expr}\linha      & \pr & \tm{+} \nt{term} \nt{expr}\linha \ou \tm{-} \nt{term} \nt{expr}\linha \ou \vazio \\
+			\nt{term}            & \pr & \nt{fact} \nt{term}\linha \\
+			\nt{term}\linha      & \pr & \tm{*} \nt{fact} \nt{term}\linha \ou \tm{/} \nt{fact} \nt{term}\linha \ou \vazio \\
+			\nt{fact}            & \pr & \tm{(} \nt{expr} \tm{)} \ou \nt{num} \\
+			\nt{num}             & \pr & \nt{digit} \nt{num}\linha \\
+			\nt{num}\linha       & \pr & \nt{digit} \nt{num}\linha \ou \vazio \\
+			\nt{digit}           & \pr & \tm{0} \ou \tm{1} \ou \tm{2} \ou \tm{3} \ou \tm{4} \ou \tm{5} \ou \tm{6} \ou \tm{7} \ou \tm{8} \ou \tm{9}
+		\end{tabular}
+	\end{center}
+	
+	\subsection{Item 2: esquema de tradução para a notação pós-fixada}
+	
+	As ações semânticas são escritas entre chaves no corpo das produções e executadas no momento em que o analisador passa por elas, da esquerda para a direita:
+	
+	\begin{center}
+		\begin{tabular}{r@{\;\;}c@{\;\;}l}
+			\nt{expr}            & \pr & \nt{term} \nt{expr}\linha \\
+			\nt{expr}\linha      & \pr & \tm{+} \nt{term} \act{+} \nt{expr}\linha \\
+			& \ou & \tm{-} \nt{term} \act{-} \nt{expr}\linha \\
+			& \ou & \vazio \\[3pt]
+			\nt{term}            & \pr & \nt{fact} \nt{term}\linha \\
+			\nt{term}\linha      & \pr & \tm{*} \nt{fact} \act{*} \nt{term}\linha \\
+			& \ou & \tm{/} \nt{fact} \act{/} \nt{term}\linha \\
+			& \ou & \vazio \\[3pt]
+			\nt{fact}            & \pr & \tm{(} \nt{expr} \tm{)} \ou \nt{num} \\
+			\nt{num}             & \pr & \nt{digit} \nt{num}\linha \\
+			\nt{num}\linha       & \pr & \nt{digit} \nt{num}\linha \ou \vazio \\
+			\nt{digit}           & \pr & \tm{0} \act{0} \ou \tm{1} \act{1} \ou $\cdots$ \ou \tm{9} \act{9}
+		\end{tabular}
+	\end{center}
+	
+	Posição de cada ação:
+	
+	\begin{itemize}[nosep]
+		\item Nas produções de \nt{expr}\linha{} e \nt{term}\linha, a ação do operador fica \textbf{depois do segundo operando} (\nt{term} ou \nt{fact}) e \textbf{antes da chamada recursiva} (\nt{expr}\linha{} ou \nt{term}\linha). Assim o operador é impresso logo após os seus dois operandos e antes de tratar o operador seguinte, o que produz a associatividade à esquerda.
+		\item Em \nt{digit}, a ação fica logo após o terminal e imprime o próprio dígito, de modo que os dígitos de um número saem na ordem em que aparecem.
+		\item As produções de \nt{expr}, \nt{term}, \nt{fact}, \nt{num}, \nt{num}\linha{} e as alternativas \vazio{} não têm ação: os parênteses não aparecem na notação pós-fixada.
+	\end{itemize}
+	
+	Na implementação, \nt{num} é reconhecido pelo procedimento \texttt{proximo} como um único token. As ações de \nt{digit} equivalem, então, a uma única ação $\nt{fact} \pr \nt{num}\;\{\texttt{print(num.valor)}\}$, que imprime o número inteiro de uma vez. É essa forma que aparece nas árvores do item 4.
+	
+	\subsection{Item 3: conjuntos FIRST e justificativa do analisador preditivo}
+	
+	\begin{center}
+		\begin{tabular}{lll}
+			\toprule
+			Não-terminal & Alternativa & FIRST \\
+			\midrule
+			\nt{expr}        & \nt{term} \nt{expr}\linha                 & \{\,\tm{(}, 0, \dots, 9\,\} \\ \addlinespace[2pt]
+			\nt{expr}\linha  & \tm{+} \nt{term} \nt{expr}\linha          & \{\,\tm{+}\,\} \\
+			& \tm{-} \nt{term} \nt{expr}\linha          & \{\,\tm{-}\,\} \\
+			& \vazio                                    & \{\,\vazio\,\} \\ \addlinespace[2pt]
+			\nt{term}        & \nt{fact} \nt{term}\linha                 & \{\,\tm{(}, 0, \dots, 9\,\} \\ \addlinespace[2pt]
+			\nt{term}\linha  & \tm{*} \nt{fact} \nt{term}\linha          & \{\,\tm{*}\,\} \\
+			& \tm{/} \nt{fact} \nt{term}\linha          & \{\,\tm{/}\,\} \\
+			& \vazio                                    & \{\,\vazio\,\} \\ \addlinespace[2pt]
+			\nt{fact}        & \tm{(} \nt{expr} \tm{)}                   & \{\,\tm{(}\,\} \\
+			& \nt{num}                                  & \{\,0, \dots, 9\,\} \\ \addlinespace[2pt]
+			\nt{num}         & \nt{digit} \nt{num}\linha                 & \{\,0, \dots, 9\,\} \\ \addlinespace[2pt]
+			\nt{num}\linha   & \nt{digit} \nt{num}\linha                 & \{\,0, \dots, 9\,\} \\
+			& \vazio                                    & \{\,\vazio\,\} \\ \addlinespace[2pt]
+			\nt{digit}       & \tm{0}, \tm{1}, \dots, \tm{9}             & \{\,0\,\}, \{\,1\,\}, \dots, \{\,9\,\} \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	
+	Os conjuntos que não são imediatos: $\text{FIRST}(\nt{digit}\,\nt{num}\linha) = \text{FIRST}(\nt{digit}) = \{0,\dots,9\}$, pois \nt{digit} não gera \vazio; $\text{FIRST}(\nt{fact}\,\nt{term}\linha) = \text{FIRST}(\nt{fact}) = \{\tm{(}\} \cup \text{FIRST}(\nt{num}) = \{\tm{(},0,\dots,9\}$, pois \nt{fact} não gera \vazio; e, pelo mesmo motivo, $\text{FIRST}(\nt{term}\,\nt{expr}\linha) = \text{FIRST}(\nt{term}) = \{\tm{(},0,\dots,9\}$.
+	
+	\textbf{Por que um analisador preditivo pode ser usado.} Um analisador preditivo escolhe a produção olhando apenas o próximo símbolo da entrada, sem retrocesso. Isso é possível porque a gramática do item 1 satisfaz três condições:
+	
+	\begin{enumerate}[nosep]
+		\item \textbf{Não há recursão à esquerda}: toda chamada recursiva acontece depois que algum terminal foi consumido, então o analisador não entra em laço infinito.
+		\item \textbf{Para cada não-terminal, os FIRST das alternativas são disjuntos}: $\{\tm{+}\} \cap \{\tm{-}\} = \emptyset$ em \nt{expr}\linha; $\{\tm{*}\} \cap \{\tm{/}\} = \emptyset$ em \nt{term}\linha; $\{\tm{(}\} \cap \{0,\dots,9\} = \emptyset$ em \nt{fact}; e cada alternativa de \nt{digit} tem um dígito diferente. Os demais não-terminais têm uma única alternativa. Logo, cada símbolo de lookahead indica no máximo uma produção.
+		\item \textbf{As alternativas \vazio{} são escolhidas sem ambiguidade}: em \nt{expr}\linha, \nt{term}\linha{} e \nt{num}\linha, o analisador escolhe \vazio{} sempre que o lookahead não pertence ao FIRST das outras alternativas daquele não-terminal. Como essas outras alternativas começam com terminais bem definidos (\tm{+} ou \tm{-}; \tm{*} ou \tm{/}; um dígito), qualquer outro símbolo indica que aquele nível da expressão terminou, e a decisão é tomada sem consumir entrada e sem precisar voltar atrás.
+	\end{enumerate}
+	
+	Portanto, a gramática é LL(1): em todo ponto da análise, um único símbolo de lookahead determina sem ambiguidade a produção a usar, e um analisador descendente recursivo preditivo pode ser empregado.
+	
+	\subsection{Item 4: árvores de derivação com as ações semânticas}
+	
+	Nas árvores abaixo, as ações semânticas aparecem como filhos extras, ligadas por arestas tracejadas, e o número entre parênteses indica a ordem em que cada ação é executada na busca em profundidade (os filhos de cada nó são visitados da esquerda para a direita, e uma ação é executada no momento em que é visitada). Como explicado no item 2, a subárvore de \nt{num} foi abreviada para a ação que imprime o número.
+	
+	\begin{figure}[h]
+		\centering
+		\begin{forest} arvore
+			[\nt{expr}
+			[\nt{term}
+			[\nt{fact}
+			[{\tm{num} (9)}]
+			[{\acao{9}{1}}, acaon]]
+			[\nt{term}\linha [\vazio]]]
+			[\nt{expr}\linha
+			[\tm{-}]
+			[\nt{term}
+			[\nt{fact}
+			[{\tm{num} (5)}]
+			[{\acao{5}{2}}, acaon]]
+			[\nt{term}\linha
+			[\tm{*}]
+			[\nt{fact}
+			[{\tm{num} (2)}]
+			[{\acao{2}{3}}, acaon]]
+			[{\acao{*}{4}}, acaon]
+			[\nt{term}\linha [\vazio]]]]
+			[{\acao{-}{5}}, acaon]
+			[\nt{expr}\linha [\vazio]]]]
+		\end{forest}
+		\caption{Árvore de derivação de \texttt{9-5*2}. Ordem das ações: 9, 5, 2, \texttt{*}, \texttt{-}. Saída: \texttt{9 5 2 * -}.}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\centering
+		\begin{forest} arvore
+			[\nt{expr}
+			[\nt{term}
+			[\nt{fact}
+			[\tm{(}]
+			[\nt{expr}
+			[\nt{term}
+			[\nt{fact}
+			[{\tm{num} (9)}]
+			[{\acao{9}{1}}, acaon]]
+			[\nt{term}\linha [\vazio]]]
+			[\nt{expr}\linha
+			[\tm{-}]
+			[\nt{term}
+			[\nt{fact}
+			[{\tm{num} (5)}]
+			[{\acao{5}{2}}, acaon]]
+			[\nt{term}\linha [\vazio]]]
+			[{\acao{-}{3}}, acaon]
+			[\nt{expr}\linha [\vazio]]]]
+			[\tm{)}]]
+			[\nt{term}\linha
+			[\tm{*}]
+			[\nt{fact}
+			[{\tm{num} (2)}]
+			[{\acao{2}{4}}, acaon]]
+			[{\acao{*}{5}}, acaon]
+			[\nt{term}\linha [\vazio]]]]
+			[\nt{expr}\linha [\vazio]]]
+		\end{forest}
+		\caption{Árvore de derivação de \texttt{(9-5)*2}. Ordem das ações: 9, 5, \texttt{-}, 2, \texttt{*}. Saída: \texttt{9 5 - 2 *}.}
+	\end{figure}
+	
+	\textbf{Comparação.} As duas cadeias têm os mesmos números e operadores, mas as árvores têm formas diferentes, e a forma da árvore determina a ordem das ações.
+	
+	Em \texttt{9-5*2}, a multiplicação fica \emph{dentro} do \nt{term} que é o segundo operando da subtração: o nó \nt{term}\linha{} que contém \tm{*} é descendente do \nt{term} pendurado em \nt{expr}\linha. Na busca em profundidade, essa subárvore é visitada por completo, inclusive a ação de \tm{*} (ação 4), antes que se chegue à ação de \tm{-} (ação 5), que é irmã desse \nt{term} e está à sua direita. Por isso a saída é \texttt{9 5 2 * -}: a precedência de \tm{*} sobre \tm{-} resulta da estrutura da gramática, em que \tm{*} é tratado num nível mais profundo (\nt{term}) do que \tm{-} (\nt{expr}).
+	
+	Em \texttt{(9-5)*2}, os parênteses fazem com que toda a subtração fique dentro de um único \nt{fact}, pela produção $\nt{fact} \pr \tm{(}\,\nt{expr}\,\tm{)}$. Esse \nt{fact} é o primeiro operando da multiplicação, então a ação de \tm{-} (ação 3) é executada ao percorrer essa subárvore, antes de se visitar o \nt{term}\linha{} que contém a multiplicação e a sua ação (ação 5). A saída é \texttt{9 5 - 2 *}. Em ambos os casos, os terminais \tm{(} e \tm{)} não têm ação, o que confirma que os parênteses só afetam a forma da árvore e não aparecem na notação pós-fixada.
+	
+	% ================================================================ Implementação
+	\section{Decisões de implementação}
+	
+	O tradutor (\texttt{tradutor.py}) usa apenas a biblioteca padrão do Python e é um analisador descendente recursivo preditivo escrito à mão, com um procedimento por não-terminal da gramática do item 1.
+	
+	\begin{itemize}
+		\item \textbf{Procedimentos.} Os não-terminais \nt{expr}, \nt{expr}\linha, \nt{term}, \nt{term}\linha{} e \nt{fact} correspondem às funções \texttt{expr}, \texttt{expr\_linha}, \texttt{term}, \texttt{term\_linha} e \texttt{fact} (o apóstrofo não é permitido em nomes do Python). Cada função percorre o corpo da produção da esquerda para a direita: terminal vira uma chamada de \texttt{casar} (\textit{match}), não-terminal vira a chamada da função correspondente, e ação semântica vira uma chamada de \texttt{emitir}. A escolha da produção é feita com \texttt{if}/\texttt{elif} sobre o lookahead, usando os conjuntos FIRST do item 3, e a alternativa \vazio{} corresponde a não fazer nada.
+		\item \textbf{\texttt{casar} (o \texttt{match}).} Compara o tipo do token atual com o tipo esperado; se forem iguais, obtém o próximo token com \texttt{proximo}, senão lança um erro de sintaxe.
+		\item \textbf{\texttt{proximo}.} Faz o papel de analisador léxico: ignora espaços e tabulações, agrupa dígitos consecutivos num único token \texttt{num} e reconhece operadores e parênteses. Por isso, \nt{num}, \nt{num}\linha{} e \nt{digit} não têm procedimentos próprios. É chamado sob demanda, um token por vez, a cada \texttt{casar} bem-sucedido.
+		\item \textbf{Tokens.} Cada token é uma tupla \texttt{(tipo, valor)}, por exemplo \texttt{("num", "10")} ou \texttt{("+", "+")}. O analisador compara o tipo; a tradução usa o valor. O fim da linha é representado por um token \texttt{("fim", "")}.
+		\item \textbf{Estado.} A linha atual, a posição de leitura, o lookahead e a saída ficam em variáveis globais do módulo, compartilhadas pelas funções.
+		\item \textbf{Saída.} Em vez de imprimir cada símbolo diretamente, a ação \texttt{emitir} acrescenta o símbolo a uma lista, e ao final da linha a lista é impressa unida por espaços. Isso garante exatamente uma linha de saída por expressão, com os tokens separados por um espaço.
+		\item \textbf{Fim da expressão.} Depois de \texttt{expr()}, verifica-se se o lookahead é o token de fim. Se ainda sobrou entrada (por exemplo, em \texttt{9 5}), a linha não é uma expressão válida como um todo.
+		\item \textbf{Erros.} Erros léxicos e sintáticos lançam \texttt{SyntaxError}, que é capturado na \texttt{main} para cada linha. Uma linha inválida produz uma linha de saída \texttt{erro: <mensagem>} e o programa continua nas linhas seguintes, mantendo a correspondência de uma linha de saída por linha de entrada. O enunciado não especifica o comportamento para entradas inválidas, por isso essa foi uma decisão própria.
+		\item \textbf{Entrada.} O programa lê do arquivo passado como argumento (\texttt{python3 tradutor.py entradas.txt}) ou, sem argumento, da entrada padrão (\texttt{python3 tradutor.py < entradas.txt}), já que o enunciado menciona as duas formas. Linhas em branco são ignoradas.
+	\end{itemize}
+	
+	Trecho que mostra a correspondência entre a gramática e o código:
+	
+	\begin{lstlisting}
+		def term_linha():
+		# term' → * fact {emitir('*')} term'
+		if lookahead[0] == "*":
+		casar("*")
+		fact()
+		emitir("*")
+		term_linha()
+		# term' → / fact {emitir('/')} term'
+		elif lookahead[0] == "/":
+		casar("/")
+		fact()
+		emitir("/")
+		term_linha()
+		# term' → vazio : não consome nada.
+		
+		def fact():
+		# fact → ( expr )
+		if lookahead[0] == "(":
+		casar("(")
+		expr()
+		casar(")")
+		# fact → num {emitir(valor do número)}
+		elif lookahead[0] == "num":
+		emitir(lookahead[1])   # emite antes de casar, que troca o lookahead
+		casar("num")
+		else:
+		raise SyntaxError(...)
+	\end{lstlisting}
+	
+	% ================================================================ Testes
+	\section{Testes}
+	
+	Além dos 7 casos públicos do enunciado, foram criados casos próprios (arquivos \texttt{txt} na pasta \texttt{/testes}). Todos os casos válidos produzem a saída esperada.
+	
+	\begin{center}
+		\begin{tabular}{>{\ttfamily}l >{\ttfamily}l l}
+			\toprule
+			\normalfont Entrada & \normalfont Saída & O que verifica \\
+			\midrule
+			42                   & 42                     & número sozinho \\
+			1+2+3                & 1 2 + 3 +              & associatividade à esquerda de \tm{+} \\
+			10-4-3               & 10 4 - 3 -             & associatividade à esquerda de \tm{-} \\
+			2*3+4                & 2 3 * 4 +              & precedência, \tm{*} à esquerda \\
+			2+3*4                & 2 3 4 * +              & precedência, \tm{*} à direita \\
+			100/10/2             & 100 10 / 2 /           & associatividade à esquerda de \tm{/} \\
+			(1+2)*(3+4)          & 1 2 + 3 4 + *          & dois grupos entre parênteses \\
+			((((7))))            & 7                      & parênteses aninhados \\
+			\textvisiblespace\textvisiblespace12 \textit{tab} + 345 & 12 345 +  & espaços, tabulação, vários dígitos \\
+			9-(5-2)              & 9 5 2 - -              & parênteses invertendo a associatividade \\
+			8/(4/2)              & 8 4 2 / /              & idem, para \tm{/} \\
+			2*(3+4)*5            & 2 3 4 + * 5 *          & parênteses no meio de um produto \\
+			1+2*3-4/2            & 1 2 3 * + 4 2 / -      & os quatro operadores \\
+			(10+20)*(30-5)/5     & 10 20 + 30 5 - * 5 /   & combinação geral \\
+			\textit{(linha em branco)} & \textit{(nenhuma)} & linha em branco ignorada \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	
+	Casos inválidos, que verificam o tratamento de erros sem interromper as linhas seguintes:
+	
+	\begin{center}
+		\begin{tabular}{>{\ttfamily}l >{\ttfamily}l}
+			\toprule
+			\normalfont Entrada & \normalfont Saída \\
+			\midrule
+			(9-5   & erro: Esperado \textquotesingle{})\textquotesingle{}, encontrado \textquotesingle{}fim\textquotesingle{}. \\
+			9+a    & erro: Caractere inválido \textquotesingle{}a\textquotesingle{} na posição 2. \\
+			9 5    & erro: Símbolo inesperado \textquotesingle{}5\textquotesingle{}. \\
+			9+*2   & erro: Esperado número ou \textquotesingle{}(\textquotesingle{}, encontrado \textquotesingle{}*\textquotesingle{}. \\
+			)      & erro: Esperado número ou \textquotesingle{}(\textquotesingle{}, encontrado \textquotesingle{})\textquotesingle{}. \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	
+	Para conferir os casos automaticamente durante o desenvolvimento, os pares de arquivos de entrada e saída esperada foram executados com um script de testes em \texttt{pytest}, que roda o tradutor como um programa separado e compara cada linha da saída com a esperada. Esse script não faz parte da entrega.
+	
+	% ================================================================ Limitações
+	\section{Limitações conhecidas}
+	
+	\begin{itemize}
+		\item \textbf{Sem números negativos nem menos unário}: entradas como \texttt{-5} ou \texttt{2*-3} são rejeitadas, pois a gramática não tem essa produção.
+		\item \textbf{Apenas inteiros}: números com casas decimais (\texttt{2.5}) não são aceitos.
+		\item \textbf{Profundidade de recursão}: como cada operador e cada par de parênteses gera chamadas recursivas, expressões extremamente longas podem ultrapassar o limite de recursão do Python. Nos testes, o tradutor aceitou 331 níveis de parênteses aninhados e falhou com \texttt{RecursionError} a partir daí, erro que não é capturado pelo tratamento por linha. Expressões usuais ficam muito abaixo desse limite.
+		\item \textbf{Recuperação de erros simples}: em uma linha inválida, apenas o primeiro erro é informado, e só a mensagem de caractere inválido indica a posição; as demais indicam o token encontrado.
+		\item \textbf{Zeros à esquerda}: números como \texttt{007} são aceitos e reproduzidos como estão na saída.
+	\end{itemize}
+	
+	
+\end{document}
