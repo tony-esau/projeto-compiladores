@@ -2,7 +2,7 @@
 
 Tradutor dirigido por sintaxe que converte expressões aritméticas da notação infixa para a notação pós-fixada, implementado como um **analisador descendente recursivo preditivo** escrito à mão em Python.
 
-Trabalho 01 (AP1) da disciplina Compiladores. Estende o tradutor básico com precedência, parênteses e números de vários dígitos, e serve de base para a integração do analisador léxico.
+Trabalho 01 da disciplina Compiladores. Estende o tradutor básico com precedência, parênteses e números de vários dígitos, e serve de base para a integração do analisador léxico.
 
 ## Exemplo
 
