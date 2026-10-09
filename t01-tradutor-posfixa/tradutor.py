@@ -128,25 +128,38 @@ def main():
         fonte = sys.stdin
 
     for linha in fonte:
+        # Remove espaços, tabulações e o \n das pontas da linha.
         linha = linha.strip()
+        # Linha em branco, pula.
         if not linha:
             continue
 
+        # Prepara o estado para analisar esta linha.
         entrada = linha
         pos = 0
         saida = []
 
-        # Primeiro Token.
-        lookahead = proximo()
+        try:
+            # Primeiro token.
+            lookahead = proximo()
 
-        # Analisa a expressão inteira.
-        expr()
+            # Analisa a expressão inteira.
+            expr()
 
-        # Se sobrou entrada, a expressão terminou antes da hora (ex.: "9 5").
-        if lookahead[0] != "fim":
-            raise SyntaxError(f"Símbolo inesperado '{lookahead[1]}'.")
+            # Se sobrou entrada, a expressão terminou antes da hora 
+            # (ex.: "9 5").
+            if lookahead[0] != "fim":
+                raise SyntaxError(f"Símbolo inesperado '{lookahead[1]}'.")
 
-        print(" ".join(saida))
+            print(" ".join(saida))
+
+        except SyntaxError as erro:
+            # Linha inválida: imprime uma linha de erro e segue para a 
+            # próxima.
+            print(f"erro: {erro}")
+
+    if fonte is not sys.stdin:
+        fonte.close()
 
 if __name__ == "__main__":
     main()

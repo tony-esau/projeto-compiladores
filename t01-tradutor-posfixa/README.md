@@ -21,7 +21,8 @@ Saída:    10 20 3 * +
 - Parênteses alterando a ordem de avaliação;
 - Números inteiros com vários dígitos;
 - Espaços e tabulações ignorados na entrada;
-- Uma expressão por linha, com linhas em branco ignoradas.
+- Uma expressão por linha, com linhas em branco ignoradas;
+- Linhas inválidas geram uma mensagem `erro: ...` no lugar da tradução, sem interromper as demais.
 
 ## Gramática
 
@@ -53,7 +54,8 @@ Os não-terminais `expr`, `expr'`, `term`, `term'` e `fact` correspondem, cada u
 ## Requisitos
 
 - Python 3.10 ou superior
-- Apenas a biblioteca padrão (sem PLY ou geradores de analisadores)
+- O tradutor usa apenas a biblioteca padrão (sem PLY ou geradores de analisadores)
+- Para rodar os testes automatizados: [pytest](https://docs.pytest.org/) (`pip install pytest`)
 
 ## Como executar
 
@@ -84,13 +86,19 @@ Os casos ficam na pasta `testes/`, sempre em pares: um arquivo com as entradas (
 
 A linha em branco em `entrada_propria.txt` é proposital: ela deve ser ignorada e não gera linha na saída, por isso o arquivo de saídas tem uma linha a menos.
 
-O script `test.py` executa o tradutor sobre cada arquivo de entrada e compara, linha a linha, com o arquivo de saídas correspondente, mostrando os casos que falharam:
+### Testes automatizados com pytest
+
+O arquivo `test_tradutor.py` transforma cada linha dos pares `entrada_<nome>.txt` e `esperado_<nome>.txt` em um caso de teste separado (com `pytest.mark.parametrize`) e executa o tradutor como um programa à parte, por meio de uma fixture. Novos pares colocados na pasta `testes/` entram nos testes automaticamente.
 
 ```bash
-python3 test.py
+python3 -m pytest -v
 ```
 
-Para conferir um arquivo isolado sem o script:
+Cada caso aparece com o nome do arquivo e o número da linha (por exemplo, `publica.txt:2`), e os que falharem mostram a saída esperada e a obtida.
+
+### Sem pytest
+
+Para conferir um arquivo isolado usando só o terminal:
 
 ```bash
 python3 tradutor.py testes/entrada_publica.txt | diff - testes/esperado_publica.txt
@@ -105,16 +113,8 @@ O arquivo `testes.txt` exigido na entrega é montado a partir de `testes/entrada
 ```
 t01-tradutor-posfixa/
 ├── tradutor.py      # implementação do tradutor
-├── test.py          # executa os casos de teste e compara as saídas
+├── test_tradutor.py # testes automatizados (pytest)
 ├── relatorio.pdf    # relatório (Parte A, decisões de implementação e limitações)
 ├── testes/          # pares de arquivos de entrada e saída esperada
 └── README.md
 ```
-
-## Andamento
-
-- [ ] Parte A: gramática sem recursão à esquerda, ações semânticas, FIRST e árvores
-- [ ] Item 5: tradutor base com `match` e `proximo`
-- [ ] Item 6: precedência e parênteses
-- [ ] Item 7: números com vários dígitos e espaços
-- [ ] Relatório e `testes.txt`
