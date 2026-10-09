@@ -8,7 +8,7 @@ Os trabalhos têm complexidade crescente e, em geral, cada um parte do anterior,
 
 | Trabalho | Tema | Pasta | Status |
 |---|---|---|---|
-| T01 (AP1) | Tradutor dirigido por sintaxe: de infixa para pós-fixa | [`t01-tradutor-posfixa`](t01-tradutor-posfixa) | Em andamento |
+| T01  | Tradutor dirigido por sintaxe: de infixa para pós-fixa | [`t01-tradutor-posfixa`](t01-tradutor-posfixa) | Em andamento |
 
 Cada pasta tem o seu próprio README, com o enunciado resumido, a gramática usada e as instruções de execução.
 
