@@ -1,8 +1,8 @@
 import sys
-entrada = ""   # Linha que está sendo analisada.
-pos = 0        # Posição do próximo caractere a ser lido em entrada.
-lookahead = ("fim", "")   # Token sendo examinado no momento.
-saida = []                # Tokens da tradução pós-fixada.
+entrada = "" # Linha que está sendo analisada.
+pos = 0 # Posição do próximo caractere a ser lido em entrada.
+lookahead = ("fim", "") # Token sendo examinado no momento.
+saida = [] # Tokens da tradução pós-fixada.
 
 def proximo():
     """
@@ -48,7 +48,9 @@ def casar(tipo):
     if lookahead[0] == tipo:
         lookahead = proximo()
     else:
-        raise SyntaxError(f"Esperado '{tipo}', encontrado '{lookahead[1] or 'fim'}'")
+        raise SyntaxError(
+            f"Esperado '{tipo}', encontrado '{lookahead[1] or 'fim'}'"
+        )
 
 def emitir(valor):
     """
@@ -57,8 +59,68 @@ def emitir(valor):
 
     saida.append(valor)
 
+def expr():
+    # expr -> term expr'.
+    term()
+    expr_linha()
+
+def expr_linha():
+    # expr' -> + term {emitir('+')} expr'
+    if lookahead[0] == "+":
+        casar("+")
+        term()
+        emitir("+")
+        expr_linha()
+
+    # expr' -> - term {emitir('-')} expr'
+    elif lookahead[0] == "-":
+        casar("-")
+        term()
+        emitir("-")
+        expr_linha()
+
+    # expr' -> vazio : não consome nada.
+
+def term():
+    # term -> fact term'
+    fact()
+    term_linha()
+
+def term_linha():
+    # term' -> * fact {emitir('*')} term'
+    if lookahead[0] == "*":
+        casar("*")
+        fact()
+        emitir("*")
+        term_linha()
+
+    # term' -> / fact {emitir('/')} term'
+    elif lookahead[0] == "/":
+        casar("/")
+        fact()
+        emitir("/")
+        term_linha()
+    # term' -> Vazio : não consome nada.
+
+def fact():
+    # fact -> ( expr )
+    if lookahead[0] == "(":
+        casar("(")
+        expr()
+        casar(")")
+
+    # fact -> num {emitir(valor do número)}
+    elif lookahead[0] == "num":
+        # Emite antes de casar, porque casar substitui o lookahead.
+        emitir(lookahead[1])
+        casar("num")
+    else:
+        raise SyntaxError(
+            f"Esperado número ou '(', encontrado '{lookahead[1] or 'fim'}'."
+        )
+
 def main():
-    global entrada, pos
+    global entrada, pos, lookahead, saida
 
     if len(sys.argv) > 1:
         fonte = open(sys.argv[1], encoding="utf-8")
@@ -66,25 +128,25 @@ def main():
         fonte = sys.stdin
 
     for linha in fonte:
-        # Remove espaços, tabulações e o \n das pontas da linha.
         linha = linha.strip()
-        # Linha em branco, pula.
         if not linha:
             continue
 
-        # Prepara o estado para analisar esta linha.
         entrada = linha
         pos = 0
+        saida = []
 
-        # Teste provisório: imprime todos os tokens ('tipo','valor') da linha.
-        token = proximo()
-        while token[0] != "fim":
-            print(token)
-            token = proximo()
-        print()  
+        # Primeiro Token.
+        lookahead = proximo()
 
-    if fonte is not sys.stdin:
-        fonte.close()
+        # Analisa a expressão inteira.
+        expr()
+
+        # Se sobrou entrada, a expressão terminou antes da hora (ex.: "9 5").
+        if lookahead[0] != "fim":
+            raise SyntaxError(f"Símbolo inesperado '{lookahead[1]}'.")
+
+        print(" ".join(saida))
 
 if __name__ == "__main__":
     main()
